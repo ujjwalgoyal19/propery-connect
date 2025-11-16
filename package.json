@@ -1,0 +1,37 @@
+{
+  "name": "propery-connect",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Digital classified platform for property listings",
+  "packageManager": "npm@11.5.1",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev --parallel",
+    "build": "turbo run build",
+    "start": "turbo run start",
+    "lint": "turbo run lint",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
+    "type-check": "turbo run type-check",
+    "prepare": "husky install"
+  },
+  "engines": {
+    "npm": "^11.5.1",
+    "node": "^22.17.1"
+  },
+  "devDependencies": {
+    "@trivago/prettier-plugin-sort-imports": "^5.2.2",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.50.0",
+    "husky": "^8.0.3",
+    "lint-staged": "^15.0.0",
+    "prettier": "^3.0.0",
+    "prettier-plugin-tailwindcss": "^0.7.1",
+    "turbo": "^1.10.0",
+    "typescript": "^5.2.0"
+  }
+}

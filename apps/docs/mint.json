@@ -1,0 +1,85 @@
+{
+  "$schema": "https://mintlify.com/schema.json",
+  "name": "Propery Connect",
+  "logo": {
+    "dark": "/logo/dark.svg",
+    "light": "/logo/light.svg"
+  },
+  "favicon": "/favicon.svg",
+  "colors": {
+    "primary": "#0D9373",
+    "light": "#07C983",
+    "dark": "#0D9373",
+    "anchors": {
+      "from": "#0D9373",
+      "to": "#07C983"
+    }
+  },
+  "topbarLinks": [
+    {
+      "name": "Support",
+      "url": "mailto:support@propery-connect.com"
+    }
+  ],
+  "topbarCtaButton": {
+    "name": "Dashboard",
+    "url": "https://app.propery-connect.com"
+  },
+  "tabs": [
+    {
+      "name": "API Reference",
+      "url": "api-reference"
+    }
+  ],
+  "anchors": [
+    {
+      "name": "GitHub",
+      "icon": "github",
+      "url": "https://github.com/ujjwalgoyal19/propery-connect"
+    },
+    {
+      "name": "Community",
+      "icon": "slack",
+      "url": "#"
+    }
+  ],
+  "navigation": [
+    {
+      "group": "Get Started",
+      "pages": ["introduction", "quickstart", "architecture", "status"]
+    },
+    {
+      "group": "Development",
+      "pages": [
+        "development/setup",
+        "development/monorepo",
+        "development/patterns",
+        "development/database"
+      ]
+    },
+    {
+      "group": "Frontend",
+      "pages": ["frontend/overview", "frontend/components", "frontend/api-client"]
+    },
+    {
+      "group": "Backend",
+      "pages": ["backend/overview", "backend/routes", "backend/services", "backend/middleware"]
+    },
+    {
+      "group": "API Documentation",
+      "pages": ["api-reference/introduction"]
+    },
+    {
+      "group": "Endpoints",
+      "pages": [
+        "api-reference/endpoint/auth",
+        "api-reference/endpoint/listings",
+        "api-reference/endpoint/payments",
+        "api-reference/endpoint/whatsapp"
+      ]
+    }
+  ],
+  "footerSocials": {
+    "github": "https://github.com/ujjwalgoyal19/propery-connect"
+  }
+}

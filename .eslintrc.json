@@ -1,0 +1,8 @@
+{
+  "root": true,
+  "extends": ["@propery-connect/eslint-config"],
+  "rules": {
+    // The codebase uses Next.js App Router (src/app). Disable the rule that expects a Pages directory.
+    "@next/next/no-html-link-for-pages": "off"
+  }
+}

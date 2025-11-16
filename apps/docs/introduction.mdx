@@ -1,0 +1,84 @@
+---
+title: Introduction
+description: 'Welcome to Propery Connect - A modern digital classified platform for property listings'
+---
+
+<img className="block dark:hidden" src="/images/hero-light.svg" alt="Hero Light" />
+<img className="hidden dark:block" src="/images/hero-dark.svg" alt="Hero Dark" />
+
+## What is Propery Connect?
+
+Propery Connect is a comprehensive digital classified platform built with a modern Turborepo monorepo architecture. It enables users to list, browse, and connect regarding properties for sale or rent.
+
+### Key Features
+
+<CardGroup cols={2}>
+  <Card title="Property Listings" icon="house" href="/development/patterns">
+    Browse, search, and filter property listings with real-time updates
+  </Card>
+  <Card title="Secure Authentication" icon="shield-halved" href="/backend/middleware">
+    Token-based authentication system with JWT support
+  </Card>
+  <Card title="WhatsApp Integration" icon="message" href="/api-reference/endpoint/whatsapp">
+    Direct messaging via Twilio WhatsApp API
+  </Card>
+  <Card title="Payment Processing" icon="credit-card" href="/api-reference/endpoint/payments">
+    Secure payment handling with Razorpay integration
+  </Card>
+</CardGroup>
+
+## Architecture Overview
+
+This project uses a **Turborepo monorepo** with strict separation between frontend and backend:
+
+- **apps/web/** - Next.js 14 (App Router) frontend
+- **apps/api/** - Express.js backend API
+- **apps/docs/** - Mintlify documentation (you're here!)
+- **packages/shared-types/** - Shared Zod schemas and TypeScript types
+- **packages/ui/** - Reusable React components
+
+<Note>
+  Types and validations are defined **once** in `packages/shared-types` and imported by both apps to
+  ensure consistency.
+</Note>
+
+## Tech Stack
+
+<AccordionGroup>
+  <Accordion icon="react" title="Frontend">
+    - Next.js 14 with App Router
+    - TypeScript 5
+    - Tailwind CSS 3
+    - React Hook Form with Zod validation
+    - Supabase client for database access
+  </Accordion>
+
+<Accordion icon="server" title="Backend">
+  - Express.js 4 with TypeScript - Supabase (PostgreSQL 15) - Twilio WhatsApp API - Razorpay payment
+  gateway - Helmet for security headers
+</Accordion>
+
+  <Accordion icon="box" title="Infrastructure">
+    - Turborepo for monorepo management
+    - Supabase for database with RLS policies
+    - Vercel for frontend deployment
+    - Docker support for containerization
+  </Accordion>
+</AccordionGroup>
+
+## Getting Started
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Get your development environment set up in minutes
+  </Card>
+  <Card title="Architecture Deep Dive" icon="sitemap" href="/architecture">
+    Learn about the project structure and design decisions
+  </Card>
+  <Card title="API Reference" icon="code" href="/api-reference/introduction">
+    Explore the REST API endpoints and examples
+  </Card>
+  <Card title="Development Patterns" icon="book" href="/development/patterns">
+    Learn the conventions and patterns used in the codebase
+  </Card>
+</CardGroup>

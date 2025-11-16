@@ -1,0 +1,16 @@
+{
+  "name": "@propery-connect/docs",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Developer documentation for Propery Connect platform",
+  "scripts": {
+    "dev": "mintlify dev",
+    "install:mintlify": "npm i -g mintlify",
+    "preview": "mintlify dev"
+  },
+  "keywords": [
+    "documentation",
+    "mintlify",
+    "propery-connect"
+  ]
+}

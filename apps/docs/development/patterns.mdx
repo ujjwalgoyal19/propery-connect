@@ -1,0 +1,496 @@
+---
+title: 'Code Patterns'
+description: 'Essential patterns and conventions used throughout the codebase'
+icon: 'book-open'
+---
+
+## Core Patterns
+
+### 1. Type-Safe Validation Flow
+
+All request validation uses Zod schemas from `@propery-connect/shared-types`:
+
+<Steps>
+  <Step title="Define Schema">
+    ```typescript
+    // packages/shared-types/src/validations/listing.ts
+    export const createListingSchema = z.object({
+      title: z.string().min(5).max(200),
+      price: z.number().positive(),
+      location: z.string().min(3),
+    });
+    ```
+  </Step>
+
+  <Step title="Apply Middleware">
+    ```typescript
+    // apps/api/src/routes/listings.routes.ts
+    import { createListingSchema } from '@propery-connect/shared-types';
+    import { validate } from '@/middleware/validate';
+
+    router.post('/', validate(createListingSchema), createListing);
+    ```
+
+  </Step>
+
+  <Step title="Automatic Validation">
+    The `validate` middleware:
+    - Parses request body with Zod
+    - Returns 400 with field-level errors if validation fails
+    - Passes validated data to controller if successful
+  </Step>
+</Steps>
+
+### 2. Standardized API Responses
+
+Use response helpers from `@/utils/response`:
+
+<CodeGroup>
+```typescript Success Response
+import { successResponse } from '@/utils/response';
+
+export async function createListing(req: Request, res: Response) {
+  const listing = await listingService.create(req.body);
+  return successResponse(res, listing, 'Listing created', 201);
+}
+
+// Returns:
+// {
+// "status": "success",
+// "message": "Listing created",
+// "data": { ...listing }
+// }
+
+````
+
+```typescript Error Response
+import { errorResponse } from '@/utils/response';
+
+return errorResponse(res, 'Not found', undefined, 404);
+
+// Returns:
+// {
+//   "status": "error",
+//   "message": "Not found"
+// }
+````
+
+```typescript Paginated Response
+import { paginatedResponse } from '@/utils/response';
+
+const { listings, total } = await getListings(page, limit);
+return paginatedResponse(res, listings, page, limit, total);
+
+// Returns:
+// {
+//   "status": "success",
+//   "data": [...listings],
+//   "pagination": {
+//     "page": 1,
+//     "limit": 10,
+//     "total": 47,
+//     "pages": 5
+//   }
+// }
+```
+
+</CodeGroup>
+
+### 3. Service Layer Pattern
+
+All database operations go through service functions:
+
+<CodeGroup>
+```typescript Service (apps/api/src/services/listings.service.ts)
+import supabase from '@/config/supabase';
+import { TABLE_NAMES, type Listing } from '@propery-connect/shared-types';
+
+export async function getListingById(id: string): Promise<Listing | null> {
+  const { data, error } = await supabase
+    .from(TABLE_NAMES.LISTINGS)
+    .select('*')
+    .eq('id', id)
+    .eq('status', 'active')
+    .single();
+
+if (error && error.code !== 'PGRST116') throw error;
+return data || null;
+}
+
+````
+
+```typescript Controller (apps/api/src/controllers/listings.controller.ts)
+import * as listingService from '@/services/listings.service';
+import { successResponse, errorResponse } from '@/utils/response';
+
+export async function getListing(req: Request, res: Response) {
+  const listing = await listingService.getListingById(req.params.id);
+
+  if (!listing) {
+    return errorResponse(res, 'Listing not found', undefined, 404);
+  }
+
+  return successResponse(res, listing);
+}
+````
+
+</CodeGroup>
+
+<Note>
+  **Why this pattern?** - Keeps controllers thin and focused on HTTP concerns - Makes business logic
+  testable without HTTP mocking - Allows service reuse across multiple controllers
+</Note>
+
+### 4. Frontend API Client
+
+Use the pre-configured API client:
+
+```typescript
+// apps/web/src/lib/api/client.ts
+import { api } from '@/lib/api/client';
+
+// GET request
+const listings = await api.get<ListingsResponse>('/listings');
+
+// POST with body
+const newListing = await api.post<Listing>('/listings', {
+  title: 'Beautiful Apartment',
+  price: 150000,
+  location: 'Mumbai',
+});
+
+// Error handling
+try {
+  await api.delete(`/listings/${id}`);
+} catch (error) {
+  console.error('Failed to delete:', error.message);
+}
+```
+
+<Tip>
+  The API client automatically: - Sets `Content-Type: application/json` - Parses JSON responses -
+  Throws errors with meaningful messages - Uses `NEXT_PUBLIC_API_URL` from env
+</Tip>
+
+### 5. Environment Configuration
+
+Backend validates env vars at startup:
+
+<CodeGroup>
+```typescript Environment Schema (apps/api/src/config/env.ts)
+import { z } from 'zod';
+
+const envSchema = z.object({
+PORT: z.string().default('3001').transform(Number),
+NODE_ENV: z.enum(['development', 'production', 'test']),
+SUPABASE_URL: z.string().url(),
+SUPABASE_SERVICE_ROLE_KEY: z.string(),
+// ... other fields
+});
+
+// Process exits if validation fails
+export const env = envSchema.parse(process.env);
+
+````
+
+```typescript Usage
+import { env } from '@/config/env';
+
+// ✅ Type-safe and validated
+const server = app.listen(env.PORT, () => {
+  console.log(`Server on port ${env.PORT}`);
+});
+
+// ❌ Never access process.env directly
+// const port = process.env.PORT; // Don't do this!
+````
+
+</CodeGroup>
+
+<Warning>
+  Always import `env` from `@/config/env`. Never access `process.env` directly in services or
+  controllers.
+</Warning>
+
+### 6. Database Access Pattern
+
+Always use the pre-configured Supabase client:
+
+```typescript
+import { TABLE_NAMES } from '@propery-connect/shared-types';
+// ❌ Wrong - don't create new clients
+import { createClient } from '@supabase/supabase-js';
+
+import supabase from '@/config/supabase';
+
+// ✅ Correct
+const { data, error } = await supabase
+  .from(TABLE_NAMES.LISTINGS)
+  .select('*')
+  .eq('status', 'active');
+
+const client = createClient(url, key); // Don't do this!
+```
+
+### 7. Middleware Stack Order
+
+<Warning>Middleware order is critical. The `errorHandler` must always be registered last.</Warning>
+
+```typescript
+// apps/api/src/index.ts
+import cors from 'cors';
+import express from 'express';
+import helmet from 'helmet';
+
+import { errorHandler } from '@/middleware/error-handler';
+import apiRoutes from '@/routes';
+
+const app = express();
+
+// 1. Security headers
+app.use(helmet());
+
+// 2. CORS configuration
+app.use(cors({ origin: env.FRONTEND_URL }));
+
+// 3. Body parsing
+app.use(express.json());
+
+// 4. Request logging
+app.use((req, res, next) => {
+  log.info(`${req.method} ${req.path}`);
+  next();
+});
+
+// 5. Route handlers
+app.use('/api', apiRoutes);
+
+// 6. Error handler (MUST BE LAST!)
+app.use(errorHandler);
+```
+
+## Common Patterns by Feature
+
+### Authentication Pattern
+
+<CodeGroup>
+```typescript Middleware
+import type { Request, Response, NextFunction } from 'express';
+
+export interface AuthenticatedRequest extends Request {
+  userId?: string;
+}
+
+export async function authMiddleware(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+) {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+
+if (!token) {
+return res.status(401).json({
+status: 'error',
+message: 'Unauthorized'
+});
+}
+
+// Validate token and set userId
+req.userId = await validateToken(token);
+next();
+}
+
+````
+
+```typescript Usage in Routes
+import { authMiddleware } from '@/middleware/auth';
+
+// Public route
+router.get('/listings', getListings);
+
+// Protected route
+router.post('/listings', authMiddleware, createListing);
+
+// Controller has access to userId
+export async function createListing(req: AuthenticatedRequest, res: Response) {
+  const userId = req.userId; // Set by middleware
+  // ...
+}
+````
+
+</CodeGroup>
+
+### Pagination Pattern
+
+<CodeGroup>
+```typescript Service
+export async function getListings(
+  page = 1,
+  limit = 10,
+  filters?: Record<string, unknown>
+) {
+  let query = supabase
+    .from(TABLE_NAMES.LISTINGS)
+    .select('*', { count: 'exact' });
+
+// Apply filters
+if (filters?.category) {
+query = query.eq('category', filters.category);
+}
+
+// Pagination
+const { data, error, count } = await query
+.range((page - 1) _ limit, page _ limit - 1);
+
+if (error) throw error;
+return { listings: data || [], total: count || 0 };
+}
+
+````
+
+```typescript Controller
+import { paginatedResponse } from '@/utils/response';
+
+export async function getListings(req: Request, res: Response) {
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 10;
+
+  const { listings, total } = await listingService.getListings(
+    page,
+    limit,
+    req.query
+  );
+
+  return paginatedResponse(res, listings, page, limit, total);
+}
+````
+
+</CodeGroup>
+
+### Error Handling Pattern
+
+<CodeGroup>
+```typescript Try-Catch in Controller
+export async function createListing(req: Request, res: Response) {
+  try {
+    const listing = await listingService.create(req.body);
+    return successResponse(res, listing, 'Created', 201);
+  } catch (error) {
+    log.error('Failed to create listing:', error);
+    return errorResponse(res, 'Failed to create listing', undefined, 500);
+  }
+}
+```
+
+```typescript Global Error Handler
+// apps/api/src/middleware/error-handler.ts
+export function errorHandler(err: Error, req: Request, res: Response, next: NextFunction) {
+  log.error('Unhandled error:', err);
+
+  res.status(500).json({
+    status: 'error',
+    message: 'Internal server error',
+    ...(env.NODE_ENV === 'development' && { stack: err.stack }),
+  });
+}
+```
+
+</CodeGroup>
+
+## Anti-Patterns to Avoid
+
+<AccordionGroup>
+  <Accordion icon="xmark" title="❌ Accessing process.env Directly">
+    ```typescript
+    // ❌ Wrong
+    const port = process.env.PORT;
+
+    // ✅ Correct
+    import { env } from '@/config/env';
+    const port = env.PORT;
+    ```
+
+  </Accordion>
+
+  <Accordion icon="xmark" title="❌ Creating New Service Clients">
+    ```typescript
+    // ❌ Wrong
+    import { createClient } from '@supabase/supabase-js';
+    const supabase = createClient(url, key);
+
+    // ✅ Correct
+    import supabase from '@/config/supabase';
+    ```
+
+  </Accordion>
+
+  <Accordion icon="xmark" title="❌ Business Logic in Controllers">
+    ```typescript
+    // ❌ Wrong - logic in controller
+    export async function createListing(req: Request, res: Response) {
+      const { data } = await supabase.from('listings').insert(req.body);
+      return res.json(data);
+    }
+
+    // ✅ Correct - logic in service
+    export async function createListing(req: Request, res: Response) {
+      const listing = await listingService.create(req.body);
+      return successResponse(res, listing, 'Created', 201);
+    }
+    ```
+
+  </Accordion>
+
+  <Accordion icon="xmark" title="❌ Cross-App Relative Imports">
+    ```typescript
+    // ❌ Wrong
+    import { Listing } from '../../packages/shared-types/src/database';
+
+    // ✅ Correct
+    import { Listing } from '@propery-connect/shared-types';
+    ```
+
+  </Accordion>
+</AccordionGroup>
+
+## Code Style
+
+### Naming Conventions
+
+- **Files**: kebab-case (`listing-form.tsx`, `auth.service.ts`)
+- **Components**: PascalCase (`ListingForm`, `Button`)
+- **Functions**: camelCase (`createListing`, `getUserById`)
+- **Constants**: UPPER_SNAKE_CASE (`TABLE_NAMES`, `API_URL`)
+- **Types/Interfaces**: PascalCase (`CreateListingInput`, `ApiResponse`)
+
+### Import Order
+
+```typescript
+// 1. External dependencies
+// 2. Workspace packages
+import { createListingSchema } from '@propery-connect/shared-types';
+import { Router } from 'express';
+import { z } from 'zod';
+
+import { createListing } from '@/controllers/listings.controller';
+// 3. Internal imports (@ alias)
+import { validate } from '@/middleware/validate';
+
+// 4. Relative imports
+import { helper } from './utils';
+```
+
+<Tip>
+  Prettier is configured to automatically sort imports. Run `npm run format` to apply formatting.
+</Tip>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Database Guide" icon="database" href="/development/database">
+    Learn about database schema and RLS policies
+  </Card>
+  <Card title="Backend Overview" icon="server" href="/backend/overview">
+    Deep dive into backend architecture
+  </Card>
+</CardGroup>

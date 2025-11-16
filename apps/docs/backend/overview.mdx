@@ -1,0 +1,109 @@
+---
+title: 'Backend Overview'
+description: 'Express.js backend architecture and technology stack'
+icon: 'server'
+---
+
+## Backend Architecture
+
+The backend is built with **Express.js** and **Prisma ORM**, providing a type-safe, scalable API for the frontend application.
+
+### Technology Stack
+
+<CardGroup cols={3}>
+  <Card title="Express.js 4" icon="node-js">
+    Web framework for Node.js
+  </Card>
+  <Card title="TypeScript 5.2" icon="code">
+    Type-safe JavaScript
+  </Card>
+  <Card title="Prisma ORM" icon="database">
+    Type-safe database access
+  </Card>
+  <Card title="PostgreSQL 15" icon="database">
+    Supabase-hosted database
+  </Card>
+  <Card title="Zod" icon="shield">
+    Type-safe validation
+  </Card>
+  <Card title="Helmet.js" icon="shield">
+    Security headers
+  </Card>
+</CardGroup>
+
+## Project Structure
+
+```
+apps/api/
+├── src/
+│   ├── config/              # Configuration files
+│   │   ├── env.ts           # Environment validation
+│   │   ├── postgres.ts      # Database connection
+│   │   ├── twilio.ts        # Twilio client
+│   │   └── razorpay.ts      # Razorpay client
+│   │
+│   ├── lib/
+│   │   └── prisma.ts        # Prisma Client singleton
+│   │
+│   ├── routes/              # API route handlers
+│   │   ├── auth.routes.ts
+│   │   ├── listings.routes.ts
+│   │   ├── payments.routes.ts
+│   │   ├── whatsapp.routes.ts
+│   │   └── index.ts
+│   │
+│   ├── controllers/         # Request handlers
+│   ├── services/            # Business logic & DB operations
+│   ├── middleware/          # Express middleware
+│   ├── utils/               # Utility functions
+│   └── index.ts             # Entry point
+│
+├── prisma/
+│   ├── schema.prisma
+│   └── migrations/
+│
+└── package.json
+```
+
+## Database & ORM
+
+Prisma provides type-safe database access with automatic migrations:
+
+```typescript
+import prisma from '@/lib/prisma';
+
+// Type-safe queries with autocomplete
+const listings = await prisma.listing.findMany({
+  where: { status: 'active' },
+  take: 10,
+  orderBy: { createdAt: 'desc' }
+});
+```
+
+## API Response Format
+
+All endpoints return a standardized response format:
+
+```json
+{
+  "success": true,
+  "data": {},
+  "message": "Operation successful"
+}
+```
+
+Error responses include validation details for debugging.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Routes" icon="route" href="/backend/routes">
+    Explore all API endpoints
+  </Card>
+  <Card title="Services" icon="cogs" href="/backend/services">
+    Learn about service patterns
+  </Card>
+  <Card title="Database" icon="database" href="/development/database">
+    Prisma ORM and schema
+  </Card>
+</CardGroup>

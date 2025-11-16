@@ -1,0 +1,14 @@
+{
+  "extends": "@propery-connect/eslint-config",
+  "env": {
+    "node": true
+  },
+  "rules": {
+    "no-console": [
+      "warn",
+      {
+        "allow": ["warn", "error", "info"]
+      }
+    ]
+  }
+}

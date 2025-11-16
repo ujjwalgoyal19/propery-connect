@@ -1,0 +1,445 @@
+---
+title: 'Development Setup'
+description: 'Detailed guide for setting up your local development environment'
+icon: 'terminal'
+---
+
+## System Requirements
+
+<CardGroup cols={3}>
+  <Card title="Node.js 18+" icon="node-js">
+    Required for running all apps
+  </Card>
+  <Card title="npm 10+" icon="npm">
+    Package manager for monorepo
+  </Card>
+  <Card title="Git" icon="git">
+    Version control
+  </Card>
+</CardGroup>
+
+## Development Workflow
+
+### Starting Services
+
+<Tabs>
+  <Tab title="All Services">
+    Start all apps in parallel:
+    ```bash
+    npm run dev
+    ```
+    This starts:
+    - Frontend on `http://localhost:3000`
+    - Backend on `http://localhost:3005`
+    - Docs on `http://localhost:3001` (if Mintlify CLI is installed)
+  </Tab>
+
+  <Tab title="Individual Services">
+    Start specific workspaces:
+    ```bash
+    # Frontend only
+    npm run dev --workspace=@propery-connect/web
+
+    # Backend only
+    npm run dev --workspace=@propery-connect/api
+
+    # Documentation only
+    npm run dev --workspace=@propery-connect/docs
+    ```
+
+  </Tab>
+</Tabs>
+
+### Build Commands
+
+```bash
+# Build all packages (respects dependency order)
+npm run build
+
+# Build specific workspace
+npm run build --workspace=@propery-connect/api
+
+# Type check all packages
+npm run type-check
+
+# Lint all packages
+npm run lint
+
+# Format code with Prettier
+npm run format
+```
+
+<Note>
+  Turborepo caches build outputs. If you need to force a rebuild, use `npx turbo build --force`.
+</Note>
+
+## Hot Reload Behavior
+
+<AccordionGroup>
+  <Accordion icon="react" title="Frontend (Next.js)">
+    - Fast Refresh for React components
+    - Automatic reload on file changes
+    - Preserves component state when possible
+  </Accordion>
+
+<Accordion icon="server" title="Backend (tsx watch)">
+  - Full server restart on file changes - Maintains database connections - ~1-2 second restart time
+</Accordion>
+
+  <Accordion icon="box" title="Shared Packages">
+    When editing `packages/shared-types`:
+    1. TypeScript recompiles automatically
+    2. Apps detect changes and hot reload
+    3. No manual restart needed
+  </Accordion>
+</AccordionGroup>
+
+## Path Aliases
+
+### Backend Aliases
+
+The backend uses `@/*` for clean imports:
+
+```typescript
+// tsconfig.json
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  }
+}
+```
+
+Example usage:
+
+```typescript
+import { env } from '@/config/env';
+import { authMiddleware } from '@/middleware/auth';
+import { successResponse } from '@/utils/response';
+```
+
+### Frontend Aliases
+
+Next.js provides default aliases:
+
+```typescript
+import ListingForm from '@/components/forms/listing-form';
+import { api } from '@/lib/api/client';
+```
+
+## Working with Shared Types
+
+### Adding a New Validation Schema
+
+<Steps>
+  <Step title="Define Zod Schema">
+    In `packages/shared-types/src/validations/`:
+    ```typescript
+    // packages/shared-types/src/validations/user.ts
+    import { z } from 'zod';
+
+    export const createUserSchema = z.object({
+      phone: z.string().min(10),
+      email: z.string().email().optional(),
+    });
+
+    export type CreateUserInput = z.infer<typeof createUserSchema>;
+    ```
+
+  </Step>
+
+<Step title="Export from Index">
+  Add to `packages/shared-types/src/index.ts`: ```typescript export * from './validations/user'; ```
+</Step>
+
+  <Step title="Use in Backend">
+    Import and use with validation middleware:
+    ```typescript
+    import { createUserSchema } from '@propery-connect/shared-types';
+    import { validate } from '@/middleware/validate';
+
+    router.post('/', validate(createUserSchema), createUser);
+    ```
+
+  </Step>
+
+  <Step title="Use in Frontend">
+    Use with React Hook Form:
+    ```typescript
+    import { createUserSchema, type CreateUserInput } from '@propery-connect/shared-types';
+    import { zodResolver } from '@hookform/resolvers/zod';
+
+    const form = useForm<CreateUserInput>({
+      resolver: zodResolver(createUserSchema)
+    });
+    ```
+
+  </Step>
+</Steps>
+
+## Environment Variables
+
+### Backend Environment
+
+<Warning>
+  The backend validates all environment variables at startup using Zod. Missing variables will cause
+  immediate exit.
+</Warning>
+
+Create `apps/api/.env`:
+
+```bash
+# Server
+PORT=3005
+NODE_ENV=development
+
+# PostgreSQL Database (AWS RDS)
+DATABASE_URL=postgresql://username:password@localhost:5432/propery_connect
+# For AWS RDS with SSL:
+# DATABASE_URL=postgresql://admin:password@mydb.xxxxx.us-east-1.rds.amazonaws.com:5432/propery_connect?ssl=true
+
+# Twilio
+TWILIO_ACCOUNT_SID=ACxxxxx
+TWILIO_AUTH_TOKEN=xxxxx
+TWILIO_WHATSAPP_NUMBER=whatsapp:+14155238886
+
+# Razorpay
+RAZORPAY_KEY_ID=rzp_test_xxxxx
+RAZORPAY_KEY_SECRET=xxxxx
+
+# Other
+FRONTEND_URL=http://localhost:3000
+JWT_SECRET=dev-secret-change-in-production
+```
+
+<Note>
+  **Direct PostgreSQL Connection:** The backend now connects directly to PostgreSQL (AWS RDS) using
+  the `pg` (node-postgres) driver with connection pooling. This provides better performance, full
+  SQL control, and no vendor lock-in. Security is enforced at the API layer rather than using
+  database Row-Level Security policies.
+</Note>
+
+### Frontend Environment
+
+Create `apps/web/.env.local`:
+
+```bash
+# API - Routes all requests through Express backend
+NEXT_PUBLIC_API_URL=http://localhost:3005/api
+```
+
+<Tip>Frontend communicates exclusively with the Express API, no direct database access needed.</Tip>
+
+## Prisma Setup
+
+### Generate Prisma Client
+
+After installing dependencies, generate the Prisma Client:
+
+```bash
+npm run prisma:generate
+```
+
+This generates TypeScript types based on your schema.
+
+### Prisma Commands
+
+<Tabs>
+  <Tab title="Development">
+    ```bash
+    # Generate Prisma Client
+    npm run prisma:generate
+
+    # Open Prisma Studio (GUI for database)
+    npm run prisma:studio
+
+    # Create a new migration after schema changes
+    npx prisma migrate dev --name init
+
+    # Push schema changes directly (for development only)
+    npx prisma db push
+    ```
+
+  </Tab>
+
+  <Tab title="Production">
+    ```bash
+    # Generate Prisma Client
+    npm run prisma:generate
+
+    # Apply pending migrations
+    npx prisma migrate deploy
+
+    # Verify database is up to date
+    npx prisma migrate status
+    ```
+
+  </Tab>
+</Tabs>
+
+### Database Models
+
+The schema defines 5 core models:
+
+- **User** - User profiles and authentication
+- **Listing** - Property listings with metadata
+- **Token** - Auth tokens with expiration
+- **Payment** - Razorpay payment records
+- **Message** - WhatsApp message logs
+
+See [Database & Prisma ORM](/development/database) for the complete schema.
+
+## Database Migrations
+
+### Running Migrations
+
+<Tabs>
+  <Tab title="Supabase CLI">
+    ```bash
+    # Link to your project
+    npx supabase link --project-ref your-project-ref
+
+    # Push migrations
+    npx supabase db push
+
+    # Create new migration
+    npx supabase migration new migration_name
+    ```
+
+  </Tab>
+
+  <Tab title="Manual SQL">
+    1. Open your Supabase SQL Editor
+    2. Copy content from `supabase/migrations/00001_initial_schema.sql`
+    3. Execute the SQL
+    4. Verify tables and RLS policies are created
+  </Tab>
+</Tabs>
+
+### Migration Best Practices
+
+<AccordionGroup>
+  <Accordion icon="arrow-up" title="Always Use Migrations">
+    Never modify the database schema directly in production. All changes should go through migration files.
+  </Accordion>
+
+<Accordion icon="shield" title="Include RLS Policies">
+  Every table should have corresponding RLS policies defined in the same migration file.
+</Accordion>
+
+  <Accordion icon="list-ol" title="Sequential Naming">
+    Use sequential numbering: `00001_`, `00002_`, etc. for predictable execution order.
+  </Accordion>
+</AccordionGroup>
+
+## Debugging
+
+### Backend Debugging
+
+The backend uses a custom logger (`@/utils/logger`):
+
+```typescript
+import { log } from '@/utils/logger';
+
+log.info('User created', { userId: user.id });
+log.error('Failed to create listing', { error: err });
+log.warn('Rate limit approaching', { remaining: 5 });
+```
+
+Logs include timestamps and context for easier debugging.
+
+### Frontend Debugging
+
+<Tabs>
+  <Tab title="Next.js DevTools">
+    - Open browser DevTools (F12)
+    - Check Console for errors
+    - Use Network tab to inspect API calls
+    - React DevTools for component inspection
+  </Tab>
+
+  <Tab title="API Response Debugging">
+    All API errors return structured responses:
+    ```json
+    {
+      "status": "error",
+      "message": "Validation failed",
+      "errors": {
+        "title": ["String must contain at least 5 characters"],
+        "price": ["Expected number, received string"]
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Testing
+
+<Warning>No test suite is currently configured. This is a planned enhancement.</Warning>
+
+To add tests in the future:
+
+1. Add test scripts to workspace `package.json` files
+2. Configure Jest or Vitest
+3. Add test task to `turbo.json`
+4. Run tests with `npm test`
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion icon="exclamation-triangle" title="Port Already in Use">
+    **Problem**: Another process is using port 3000 or 3005.
+
+    **Solution**:
+    ```bash
+    # Find process using port
+    lsof -i :3000  # macOS/Linux
+    netstat -ano | findstr :3000  # Windows
+
+    # Kill the process or change port in .env
+    PORT=3006 npm run dev --workspace=@propery-connect/api
+    ```
+
+  </Accordion>
+
+  <Accordion icon="exclamation-triangle" title="Module Resolution Errors">
+    **Problem**: TypeScript can't find `@propery-connect/shared-types`.
+
+    **Solution**:
+    ```bash
+    # Rebuild shared packages
+    npm run build --workspace=@propery-connect/shared-types
+
+    # Or rebuild everything
+    npm run build
+    ```
+
+  </Accordion>
+
+  <Accordion icon="exclamation-triangle" title="Turborepo Cache Issues">
+    **Problem**: Changes not reflecting after rebuild.
+
+    **Solution**:
+    ```bash
+    # Clear Turborepo cache
+    npx turbo run build --force
+
+    # Or delete cache directory
+    rm -rf node_modules/.cache/turbo
+    ```
+
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Monorepo Guide" icon="folder-tree" href="/development/monorepo">
+    Learn how to work effectively in the monorepo
+  </Card>
+  <Card title="Code Patterns" icon="code" href="/development/patterns">
+    Understand the conventions used in the codebase
+  </Card>
+</CardGroup>

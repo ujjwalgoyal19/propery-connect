@@ -1,0 +1,181 @@
+---
+title: 'Quickstart'
+description: 'Get your Propery Connect development environment up and running in minutes'
+icon: 'rocket'
+---
+
+## Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+<CardGroup cols={2}>
+  <Card title="Node.js" icon="node-js">
+    Version 18.0.0 or higher
+  </Card>
+  <Card title="npm" icon="npm">
+    Version 10.0.0 or higher
+  </Card>
+  <Card title="Git" icon="git">
+    Latest version
+  </Card>
+  <Card title="Supabase Account" icon="database">
+    Free tier available
+  </Card>
+</CardGroup>
+
+## Installation
+
+<Steps>
+  <Step title="Clone the repository">
+    ```bash
+    git clone https://github.com/ujjwalgoyal19/propery-connect.git
+    cd propery-connect
+    ```
+  </Step>
+
+<Step title="Install dependencies">
+  This command installs dependencies for all workspaces in the monorepo: ```bash npm install ```
+</Step>
+
+  <Step title="Set up environment variables">
+    Create environment files for both frontend and backend:
+
+    **Backend (.env in apps/api/)**
+    ```bash
+    PORT=3005
+    NODE_ENV=development
+
+    # Supabase
+    SUPABASE_URL=your_supabase_url
+    SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+
+    # Twilio
+    TWILIO_ACCOUNT_SID=your_account_sid
+    TWILIO_AUTH_TOKEN=your_auth_token
+    TWILIO_WHATSAPP_NUMBER=your_whatsapp_number
+
+    # Razorpay
+    RAZORPAY_KEY_ID=your_key_id
+    RAZORPAY_KEY_SECRET=your_key_secret
+
+    # Other
+    FRONTEND_URL=http://localhost:3000
+    JWT_SECRET=your_jwt_secret
+    ```
+
+    **Frontend (.env.local in apps/web/)**
+    ```bash
+    NEXT_PUBLIC_API_URL=http://localhost:3005/api
+    NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+    ```
+
+  </Step>
+
+  <Step title="Run database migrations">
+    Apply the initial schema to your Supabase database:
+    ```bash
+    # Using Supabase CLI
+    npx supabase db push
+    ```
+
+    Or manually run the SQL in `supabase/migrations/00001_initial_schema.sql` in your Supabase SQL editor.
+
+  </Step>
+
+  <Step title="Start the development servers">
+    Start all services simultaneously:
+    ```bash
+    npm run dev
+    ```
+
+    Or start individual services:
+    ```bash
+    # Frontend only (runs on port 3000)
+    npm run dev --workspace=@propery-connect/web
+
+    # Backend only (runs on port 3005)
+    npm run dev --workspace=@propery-connect/api
+
+    # Documentation only
+    npm run dev --workspace=@propery-connect/docs
+    ```
+
+  </Step>
+</Steps>
+
+## Verify Installation
+
+<AccordionGroup>
+  <Accordion icon="check" title="Backend Health Check">
+    Visit [http://localhost:3005/api/health](http://localhost:3005/api/health)
+
+    You should see:
+    ```json
+    {
+      "status": "ok",
+      "timestamp": "2025-11-02T..."
+    }
+    ```
+
+  </Accordion>
+
+  <Accordion icon="check" title="Frontend Access">
+    Visit [http://localhost:3000](http://localhost:3000)
+
+    You should see the Propery Connect home page.
+
+  </Accordion>
+
+  <Accordion icon="check" title="Documentation">
+    Visit [http://localhost:3001](http://localhost:3001)
+
+    You should see this documentation site running locally.
+
+  </Accordion>
+</AccordionGroup>
+
+## Common Issues
+
+<Warning>
+  **Port conflicts**: If port 3000 is already in use, Next.js will automatically use port 3002. Make
+  sure to update your `NEXT_PUBLIC_API_URL` accordingly.
+</Warning>
+
+<AccordionGroup>
+  <Accordion icon="triangle-exclamation" title="Environment validation errors">
+    If you see environment validation errors on backend startup, ensure all required variables are set in `apps/api/.env`. The backend uses Zod to validate environment variables and will exit if any are missing.
+  </Accordion>
+
+<Accordion icon="triangle-exclamation" title="Database connection issues">
+  Verify your Supabase credentials are correct and that your IP is allowed in Supabase's database
+  settings.
+</Accordion>
+
+  <Accordion icon="triangle-exclamation" title="Module not found errors">
+    If you see module resolution errors, try:
+    ```bash
+    # Clear node_modules and reinstall
+    rm -rf node_modules
+    rm package-lock.json
+    npm install
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Learn the Architecture" icon="sitemap" href="/architecture">
+    Understand the monorepo structure and design decisions
+  </Card>
+  <Card title="Development Patterns" icon="code" href="/development/patterns">
+    Learn the conventions used throughout the codebase
+  </Card>
+  <Card title="Explore the API" icon="webhook" href="/api-reference/introduction">
+    Browse available API endpoints and test them
+  </Card>
+  <Card title="Database Schema" icon="database" href="/development/database">
+    Learn about the database structure and RLS policies
+  </Card>
+</CardGroup>

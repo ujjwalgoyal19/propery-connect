@@ -1,0 +1,195 @@
+---
+title: 'API Introduction'
+description: 'Overview of the Propery Connect REST API'
+icon: 'webhook'
+---
+
+## Base URL
+
+<CodeGroup>
+```bash Development
+http://localhost:3005/api
+```
+
+```bash Production
+https://api.propery-connect.com/api
+```
+
+</CodeGroup>
+
+## Authentication
+
+Most endpoints require authentication using Bearer tokens:
+
+```bash
+Authorization: Bearer <your_token>
+```
+
+### Getting an Auth Token
+
+```bash
+POST /api/auth/login
+Content-Type: application/json
+
+{
+  "phone": "+919876543210"
+}
+```
+
+<Note>
+  The authentication system is currently under development. Token validation is not yet fully
+  implemented.
+</Note>
+
+## Response Format
+
+All API responses follow a consistent structure:
+
+### Success Response
+
+```json
+{
+  "status": "success",
+  "message": "Operation successful",
+  "data": {
+    // Response data
+  }
+}
+```
+
+### Error Response
+
+```json
+{
+  "status": "error",
+  "message": "Error description",
+  "errors": {
+    "field_name": ["Validation error message"]
+  }
+}
+```
+
+### Paginated Response
+
+```json
+{
+  "status": "success",
+  "message": "Success",
+  "data": [...],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 47,
+    "pages": 5
+  }
+}
+```
+
+## Rate Limiting
+
+<Warning>
+  Rate limiting is configured but limits are still being determined. Expect reasonable usage limits
+  in production.
+</Warning>
+
+## Error Codes
+
+| Status Code | Description                    |
+| ----------- | ------------------------------ |
+| 200         | Success                        |
+| 201         | Created                        |
+| 400         | Bad Request (validation error) |
+| 401         | Unauthorized                   |
+| 404         | Not Found                      |
+| 500         | Internal Server Error          |
+
+## Health Check
+
+Check API availability:
+
+```bash
+GET /api/health
+```
+
+Response:
+
+```json
+{
+  "status": "ok",
+  "timestamp": "2025-11-02T10:30:00.000Z"
+}
+```
+
+## Available Endpoints
+
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="shield-halved" href="/api-reference/endpoint/auth">
+    Login, logout, and token management
+  </Card>
+  <Card title="Listings" icon="house" href="/api-reference/endpoint/listings">
+    CRUD operations for property listings
+  </Card>
+  <Card title="Payments" icon="credit-card" href="/api-reference/endpoint/payments">
+    Razorpay payment processing
+  </Card>
+  <Card title="WhatsApp" icon="message" href="/api-reference/endpoint/whatsapp">
+    Send messages via Twilio WhatsApp API
+  </Card>
+</CardGroup>
+
+## Testing the API
+
+### Using cURL
+
+```bash
+# Get all listings
+curl http://localhost:3005/api/listings
+
+# Create a listing
+curl -X POST http://localhost:3005/api/listings \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Beautiful Apartment",
+    "price": 150000,
+    "location": "Mumbai",
+    "category": "apartment",
+    "images": ["https://example.com/image.jpg"],
+    "contact_phone": "9876543210"
+  }'
+```
+
+### Using JavaScript Fetch
+
+```javascript
+// Get listings
+const response = await fetch('http://localhost:3005/api/listings');
+const data = await response.json();
+
+// Create listing
+const response = await fetch('http://localhost:3005/api/listings', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer <token>'
+  },
+  body: JSON.stringify({
+    title: 'Beautiful Apartment',
+    price: 150000,
+    location: 'Mumbai',
+    category: 'apartment',
+    images: ['https://example.com/image.jpg'],
+    contact_phone: '9876543210'
+  })
+});
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Authentication Endpoints" icon="shield" href="/api-reference/endpoint/auth">
+    Learn about auth flows
+  </Card>
+  <Card title="Listings Endpoints" icon="list" href="/api-reference/endpoint/listings">
+    Explore property listing operations
+  </Card>
+</CardGroup>

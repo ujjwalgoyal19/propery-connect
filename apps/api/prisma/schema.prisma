@@ -1,0 +1,106 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  phone     String   @unique
+  email     String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  listings Listing[]
+  tokens   Token[]
+  payments Payment[]
+
+  @@map("users")
+}
+
+model Listing {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  title        String
+  description  String?
+  price        Decimal
+  location     String
+  category     String
+  images       String[]
+  contactPhone String?  @map("contact_phone")
+  contactEmail String?  @map("contact_email")
+  amenities    String[]
+  status       String   @default("active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokens   Token[]
+  payments Payment[]
+  messages Message[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([category])
+  @@index([location])
+  @@map("listings")
+}
+
+model Token {
+  id        String   @id @default(uuid())
+  token     String   @unique @default(uuid())
+  userId    String   @map("user_id")
+  listingId String?  @map("listing_id")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing Listing? @relation(fields: [listingId], references: [id], onDelete: SetNull)
+
+  @@index([token])
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("tokens")
+}
+
+model Payment {
+  id        String   @id @default(uuid())
+  listingId String?  @map("listing_id")
+  userId    String   @map("user_id")
+  orderId   String   @unique @map("order_id")
+  paymentId String?  @map("payment_id")
+  amount    Decimal
+  currency  String   @default("INR")
+  status    String   @default("pending")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing Listing? @relation(fields: [listingId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@index([userId])
+  @@map("payments")
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  listingId String?  @map("listing_id")
+  sender    String
+  recipient String
+  message   String
+  messageSid String?  @map("message_sid")
+  status    String   @default("sent")
+  sentAt    DateTime @default(now()) @map("sent_at")
+
+  listing Listing? @relation(fields: [listingId], references: [id], onDelete: SetNull)
+
+  @@index([listingId])
+  @@index([sentAt])
+  @@map("messages")
+}

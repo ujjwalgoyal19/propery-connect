@@ -1,0 +1,34 @@
+{
+  "pipeline": {
+    "prisma:generate": {
+      "dependsOn": [],
+      "outputs": [".prisma/**"],
+      "cache": true
+    },
+    "build": {
+      "dependsOn": ["^build", "prisma:generate"],
+      "outputs": [".next/**", "dist/**", "build/**"],
+      "cache": true
+    },
+    "lint": {
+      "outputs": [],
+      "cache": false
+    },
+    "type-check": {
+      "outputs": [],
+      "cache": true
+    },
+    "format": {
+      "outputs": [],
+      "cache": false
+    },
+    "dev": {
+      "persistent": true,
+      "cache": false,
+      "dependsOn": ["prisma:generate"]
+    },
+    "prisma:studio": {
+      "cache": false
+    }
+  }
+}
